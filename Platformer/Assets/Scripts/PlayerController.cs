@@ -1,35 +1,59 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float jumpForce = 5f; // Сила прыжка
-    public float moveSpeed = 5f; // Скорость перемещения
     private Rigidbody2D rb; // Компонент Rigidbody2D
-    public bool isGrounded; // Проверка на земле
+    private bool pressedJump;//переменная нажатой кнопки прыжка
+    public float jumpForce; // Сила прыжка
+    public float moveSpeed; // Скорость перемещения
+
+    public bool isGrounded; // Проверка на земле (для наглядности)
+    public float moveInput, moveInput2;//коэффициеэнт движения (переменная)
+                                       //доп переменные
+    public bool hitColliderNull;//переменная столкновения луча
+    public bool hit2ColliderNull;//переменная столкновения луча 2
 
     float right;//переменная для направления движения;
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        jumpForce = Constants.JUMP_FORCE;
+        moveSpeed = Constants.MOOVE_SPEED;
     }
 
     void Update()
     {
         Move(); // Вынесли перемещение в отдельный метод
+
         // Проверяем, нажата ли клавиша пробела и находится ли игрок на земле
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.Keypad8))
         {
-            Debug.Log("Jump");
-            Jump();
+            if (isGrounded)
+                Jump();
+        }
+
+        AboveWall();
+    }
+    void CheckKeyDown(KeyCode key, System.Action method)//проверка события нажатия кнопки
+    {
+        if (Input.GetKeyDown(key))
+        {
+            method();
         }
     }
+    bool CheckKeyDown(KeyCode key)//проверка события нажатия кнопки
+    {
+        if (Input.GetKeyDown(key))
+        {
+            return true;
+        }
+        return false;
+    }
+
     void Move()
     {
         // Получаем ввод по горизонтали
-        float moveInput = Input.GetAxis("Horizontal");
+        moveInput = Input.GetAxis("Horizontal");
 
         // Проверка на столкновение с стенами
         if (!IsTouchingWall(moveInput))
@@ -42,6 +66,38 @@ public class PlayerController : MonoBehaviour
             rb.velocity = new Vector2(0f, rb.velocity.y);
         }
     }
+    //логика падения на стену сверху
+    void AboveWall()
+    {
+        RaycastHit2D hit2 = Physics2D.Raycast(new Vector3(transform.position.x, transform.position.y - 1, 0f), Vector2.down, 0.5f);//1.625f
+        Debug.Log("AboveWall() ");
+        if (hit2.collider != null)
+        {
+            Debug.Log("hit2.collider name: " + (hit2.collider.gameObject.name));
+            // isGrounded = true; // Игрок на жесткой поверхности
+            hit2ColliderNull = false;
+            // Логика прыжка или приземления
+            moveInput2 = Input.GetAxis("Vertical");
+            if (moveInput2 <= 0)
+            {
+                Debug.Log("moveInput2 <= 0");
+                isGrounded = true;
+                if (hit2.collider.CompareTag("Wall"))
+                {
+                    Debug.Log("hit2.collider.CompareTag(Wall)");
+                }
+            }
+            else
+            {
+                isGrounded = false;
+                Debug.Log("moveInput2 > 0");
+            }
+        }
+        else
+        {
+            hit2ColliderNull = true;
+        }
+    }
 
     private bool IsTouchingWall(float moveInput)
     {
@@ -50,22 +106,19 @@ public class PlayerController : MonoBehaviour
         {
             // Определяем направление движения
             Vector2 direction = new Vector2(moveInput, 0);//растет при нажатии кнопки движения
-            //Debug.Log("direction.x: " + direction.x);
-
             if (direction.x > 0) { right = 1f; }
             else
             {
                 right = -1f;
             }
-            Debug.Log("Hero position: " + transform.position);
-            RaycastHit2D hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * 0.6876f), transform.position.y, 0f), direction, 0.125f); ; // 0.5f - расстояние до стены
-
+            RaycastHit2D hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * Constants.BEAM_DISPLACEMENT), transform.position.y, 0f), direction, Constants.BEAM_LENGTH);
             // Если есть столкновение со стеной, возвращаем true
             if (hit.collider != null)
             {
-                Debug.Log("hit.collider name: " + (hit.collider.gameObject.name));
-                Debug.Log("hit.collider.CompareTag(Wall): " + hit.collider.CompareTag("Wall"));
+                hitColliderNull = false;
             }
+            else
+            { hitColliderNull = true; }
             return hit.collider != null && hit.collider.CompareTag("Wall");//Wall
         }
         return false;
@@ -76,6 +129,7 @@ public class PlayerController : MonoBehaviour
         // Применяем силу прыжка
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         isGrounded = false; // Игрок теперь в воздухе
+        pressedJump = false;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -84,15 +138,22 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true; // Игрок на земле
+            Debug.Log("OnCollisionEnter2D -  collision.gameObject.CompareTag(Ground): " + collision.gameObject.CompareTag("Ground"));
         }
     }
     private void OnCollisionStay2D(Collision2D collision)
     {
+        Debug.Log("OnCollisionStay2D");
         // Проверяем столкновение с землей
         if (collision.gameObject.CompareTag("Ground"))
         {
-
             isGrounded = true; // Игрок на земле
+        }
+        // Проверяем столкновение с землей
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            Debug.Log("Wallll");
+            isGrounded = true; // Игрок на земле ?
         }
     }
     private void OnCollisionExit2D(Collision2D collision)
