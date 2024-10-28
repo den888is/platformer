@@ -1,8 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb; // Компонент Rigidbody2D
+    private GameObject keysIndicator;//указывает на индикатор ключей
+
     private bool pressedJump;//переменная нажатой кнопки прыжка
     public float jumpForce; // Сила прыжка
     public float moveSpeed; // Скорость перемещения
@@ -19,6 +22,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         jumpForce = Constants.JUMP_FORCE;
         moveSpeed = Constants.MOOVE_SPEED;
+        keysIndicator = GameObject.Find("KeysIndicator");
     }
 
     void Update()
@@ -34,22 +38,22 @@ public class PlayerController : MonoBehaviour
 
         AboveWall();
     }
-    void CheckKeyDown(KeyCode key, System.Action method)//проверка события нажатия кнопки
-    {
-        if (Input.GetKeyDown(key))
+    /*    void CheckKeyDown(KeyCode key, System.Action method)//проверка события нажатия кнопки
         {
-            method();
+            if (Input.GetKeyDown(key))
+            {
+                method();
+            }
         }
-    }
-    bool CheckKeyDown(KeyCode key)//проверка события нажатия кнопки
-    {
-        if (Input.GetKeyDown(key))
+        bool CheckKeyDown(KeyCode key)//проверка события нажатия кнопки
         {
-            return true;
+            if (Input.GetKeyDown(key))
+            {
+                return true;
+            }
+            return false;
         }
-        return false;
-    }
-
+    */
     void Move()
     {
         // Получаем ввод по горизонтали
@@ -73,14 +77,13 @@ public class PlayerController : MonoBehaviour
         Debug.Log("AboveWall() ");
         if (hit2.collider != null)
         {
-            Debug.Log("hit2.collider name: " + (hit2.collider.gameObject.name));
-            // isGrounded = true; // Игрок на жесткой поверхности
+            // Debug.Log("hit2.collider name: " + (hit2.collider.gameObject.name));
+            // Игрок на жесткой поверхности
             hit2ColliderNull = false;
             // Логика прыжка или приземления
             moveInput2 = Input.GetAxis("Vertical");
             if (moveInput2 <= 0)
             {
-                Debug.Log("moveInput2 <= 0");
                 isGrounded = true;
                 if (hit2.collider.CompareTag("Wall"))
                 {
@@ -90,7 +93,6 @@ public class PlayerController : MonoBehaviour
             else
             {
                 isGrounded = false;
-                Debug.Log("moveInput2 > 0");
             }
         }
         else
@@ -134,6 +136,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        Debug.Log("OnCollisionEnter2D");
         // Проверяем столкновение с землей
         if (collision.gameObject.CompareTag("Ground"))
         {
@@ -155,6 +158,7 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Wallll");
             isGrounded = true; // Игрок на земле ?
         }
+
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
@@ -162,6 +166,28 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = false; // Игрок на земле
+        }
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        // Проверяем столкновение с ключом
+        if (collision.gameObject.CompareTag("Key"))
+        {
+            if (keysIndicator != null)
+            {
+                keysIndicator.GetComponent<KeysIndicator>().KeyCountPlus();
+                Destroy(collision.gameObject);
+            }
+            else { Debug.LogError("null - keyIndicator!!!"); }
+        }
+        // Проверяем столкновение с дверью
+        if (collision.gameObject.CompareTag("Door"))
+        {
+            Debug.Log("Door");
+            if (keysIndicator.GetComponent<KeysIndicator>().keyCount == 5)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
         }
     }
 }
