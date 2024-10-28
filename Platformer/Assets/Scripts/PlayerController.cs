@@ -6,7 +6,6 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb; // Компонент Rigidbody2D
     private GameObject keysIndicator;//указывает на индикатор ключей
 
-    private bool pressedJump;//переменная нажатой кнопки прыжка
     public float jumpForce; // Сила прыжка
     public float moveSpeed; // Скорость перемещения
 
@@ -23,6 +22,8 @@ public class PlayerController : MonoBehaviour
         jumpForce = Constants.JUMP_FORCE;
         moveSpeed = Constants.MOOVE_SPEED;
         keysIndicator = GameObject.Find("KeysIndicator");
+        hitColliderNull = true;
+        hit2ColliderNull = true;
     }
 
     void Update()
@@ -38,29 +39,14 @@ public class PlayerController : MonoBehaviour
 
         AboveWall();
     }
-    /*    void CheckKeyDown(KeyCode key, System.Action method)//проверка события нажатия кнопки
-        {
-            if (Input.GetKeyDown(key))
-            {
-                method();
-            }
-        }
-        bool CheckKeyDown(KeyCode key)//проверка события нажатия кнопки
-        {
-            if (Input.GetKeyDown(key))
-            {
-                return true;
-            }
-            return false;
-        }
-    */
+
     void Move()
     {
         // Получаем ввод по горизонтали
         moveInput = Input.GetAxis("Horizontal");
 
         // Проверка на столкновение с стенами
-        if (!IsTouchingWall(moveInput))
+        if (!IsTouchingWall(moveInput))//нет присоединенной стены
         {
             // Перемещение игрока
             rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
@@ -73,36 +59,26 @@ public class PlayerController : MonoBehaviour
     //логика падения на стену сверху
     void AboveWall()
     {
-        RaycastHit2D hit2 = Physics2D.Raycast(new Vector3(transform.position.x, transform.position.y - 1, 0f), Vector2.down, 0.5f);//1.625f
+        RaycastHit2D hit2 = Physics2D.Raycast(new Vector3(transform.position.x, transform.position.y - 0.9376f, 0f), Vector2.down, Constants.BEAM_LENGTH_VERTICAL);//
+        RaycastHit2D hit22 = Physics2D.Raycast(new Vector3(transform.position.x - 0.6875f, transform.position.y - 0.9376f, 0f), Vector2.down, Constants.BEAM_LENGTH_VERTICAL);//2 луч 
+        RaycastHit2D hit222 = Physics2D.Raycast(new Vector3(transform.position.x + 0.6875f, transform.position.y - 0.9376f, 0f), Vector2.down, Constants.BEAM_LENGTH_VERTICAL);//3й луч
         Debug.Log("AboveWall() ");
-        if (hit2.collider != null)
+        if (hit2.collider != null || hit22.collider != null || hit222.collider != null)
         {
-            // Debug.Log("hit2.collider name: " + (hit2.collider.gameObject.name));
+            isGrounded = true;//значит на земле
             // Игрок на жесткой поверхности
             hit2ColliderNull = false;
-            // Логика прыжка или приземления
-            moveInput2 = Input.GetAxis("Vertical");
-            if (moveInput2 <= 0)
-            {
-                isGrounded = true;
-                if (hit2.collider.CompareTag("Wall"))
-                {
-                    Debug.Log("hit2.collider.CompareTag(Wall)");
-                }
-            }
-            else
-            {
-                isGrounded = false;
-            }
         }
         else
         {
+            isGrounded = false;
             hit2ColliderNull = true;
         }
     }
 
     private bool IsTouchingWall(float moveInput)
     {
+        Debug.Log("IsTouchingWall");
         // Проверка на столкновение с стенами
         if (moveInput != 0)
         {
@@ -113,68 +89,113 @@ public class PlayerController : MonoBehaviour
             {
                 right = -1f;
             }
-            RaycastHit2D hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * Constants.BEAM_DISPLACEMENT), transform.position.y, 0f), direction, Constants.BEAM_LENGTH);
+
+            RaycastHit2D hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * Constants.BEAM_DISPLACEMENT), transform.position.y, 0f), direction, Constants.BEAM_LENGTH_HORIZONT);
             // Если есть столкновение со стеной, возвращаем true
-            if (hit.collider != null)
+            if (hit.collider != null) //значит что-то с коллайдером есть по направлению луча
             {
                 hitColliderNull = false;
+                //проверка на наличие боксколлайдера для одиночных объектов
+                /*                if (HasBoxCollider2D(hit.collider.gameObject))
+                                {
+                                    if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true)
+                                    { return false; } //если коллайдер является тригером - возвращаем false
+                                    else
+                                        return true;
+                                }
+                                else return true;//если коллайдер но не бокс - стена*/
+                return IsTriggerBoxCollider2D(hit.collider.gameObject);
             }
             else
-            { hitColliderNull = true; }
-            return hit.collider != null && hit.collider.CompareTag("Wall");//Wall
+            {
+                Debug.Log("else 1");
+                hitColliderNull = true;
+                //кидаем второй луч сверху
+                hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * Constants.BEAM_DISPLACEMENT), transform.position.y + 0.5001f, 0f), direction, Constants.BEAM_LENGTH_HORIZONT);
+                if (hit.collider != null) //значит стена есть
+                {
+                    hitColliderNull = false;
+                    /* if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true) { return false; }
+                     else
+                         return true;*/
+                    return IsTriggerBoxCollider2D(hit.collider.gameObject);
+                }
+                else
+                {
+                    Debug.Log("else 2");
+                    hitColliderNull = true;
+                    //кидаем третий луч снизу
+                    hit = Physics2D.Raycast(new Vector3(transform.position.x + (right * Constants.BEAM_DISPLACEMENT), transform.position.y - 0.9376f, 0f), direction, Constants.BEAM_LENGTH_HORIZONT);
+                    if (hit.collider != null) //значит стена есть
+                    {
+                        hitColliderNull = false;
+                        /*                        if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true) { return false; }
+                                                else
+                                                    return true;*/
+                        return IsTriggerBoxCollider2D(hit.collider.gameObject);
+                    }
+                    else
+                    {
+                        hitColliderNull = true;
+                    }
+                }
+            }
+
+            return !hitColliderNull;//возвращаем есть ли стена
         }
         return false;
     }
-
+    //вспомогательный метод для одинаковых вычислений в IsTouchingWall
+    bool IsTriggerBoxCollider2D(GameObject gO)
+    {
+        Debug.Log("IsTriggerBoxCollider2D");
+        //проверка на наличие боксколлайдера для одиночных объектов
+        if (HasBoxCollider2D(gO))
+        {
+            Debug.Log("HasBoxCollider2D(gO)");
+            if (gO.GetComponent<BoxCollider2D>().isTrigger == true)
+            { return false; } //если коллайдер является тригером - возвращаем false (т.е. стены нет)
+            else
+                return true;
+        }
+        else return true;//если коллайдер но не бокс - стена 
+    }
+    //проверяет наличие BoxCollider2D на объекте
+    bool HasBoxCollider2D(GameObject g)
+    {
+        if (g.GetComponent<BoxCollider2D>() != null)
+        {
+            return true;
+        }
+        else return false;
+    }
     void Jump()
     {
         // Применяем силу прыжка
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        isGrounded = false; // Игрок теперь в воздухе
-        pressedJump = false;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("OnCollisionEnter2D");
-        // Проверяем столкновение с землей
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true; // Игрок на земле
-            Debug.Log("OnCollisionEnter2D -  collision.gameObject.CompareTag(Ground): " + collision.gameObject.CompareTag("Ground"));
-        }
+
     }
     private void OnCollisionStay2D(Collision2D collision)
     {
-        Debug.Log("OnCollisionStay2D");
-        // Проверяем столкновение с землей
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true; // Игрок на земле
-        }
-        // Проверяем столкновение с землей
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            Debug.Log("Wallll");
-            isGrounded = true; // Игрок на земле ?
-        }
 
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
-        // Проверяем столкновение с землей
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = false; // Игрок на земле
-        }
+
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // Проверяем столкновение с ключом
         if (collision.gameObject.CompareTag("Key"))
         {
+            Debug.Log("Key");
             if (keysIndicator != null)
             {
+                Debug.Log("keysIndicator != null");
                 keysIndicator.GetComponent<KeysIndicator>().KeyCountPlus();
                 Destroy(collision.gameObject);
             }
