@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,6 +7,7 @@ public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb; // Компонент Rigidbody2D
     private GameObject keysIndicator;//указывает на индикатор ключей
+    private GameObject healthBar;//здоровье
 
     public float jumpForce; // Сила прыжка
     public float moveSpeed; // Скорость перемещения
@@ -24,6 +27,7 @@ public class PlayerController : MonoBehaviour
         keysIndicator = GameObject.Find("KeysIndicator");
         hitColliderNull = true;
         hit2ColliderNull = true;
+        healthBar = GameObject.Find("HealthBar");
     }
 
     void Update()
@@ -56,6 +60,34 @@ public class PlayerController : MonoBehaviour
             rb.velocity = new Vector2(0f, rb.velocity.y);
         }
     }
+
+    public void BlinkingRed(float immunityTime)
+    {
+        StartCoroutine(StartBlinkTimer(immunityTime));
+    }
+    private IEnumerator StartBlinkTimer(float time)
+    {
+        float timeRed = time;
+        Debug.Log("Start blinktimer");
+        byte g = 0;
+        byte increment = 1;
+        int sign = 1;
+
+
+        while (timeRed > 0)
+        {
+            timeRed -= Time.deltaTime;
+            GetComponent<SpriteRenderer>().color = new Color32(255, g, g, 255);
+            g = (byte)(g + increment * sign);
+            if (g > 254) { sign = -1; }
+            if (g < 1) { sign = 1; }
+            yield return null;
+        }
+        Debug.Log("End blinktimer");
+        GetComponent<SpriteRenderer>().color = new Color32(255, 255, 255, 255);//назначить красный
+        yield return null;
+    }
+
     //логика падения на стену сверху
     void AboveWall()
     {
@@ -68,12 +100,24 @@ public class PlayerController : MonoBehaviour
             isGrounded = true;//значит на земле
             // Игрок на жесткой поверхности
             hit2ColliderNull = false;
+
+
+            SearchingItemWhithBoxCollider2D(AimObject(hit2, hit22, hit222));
         }
         else
         {
             isGrounded = false;
             hit2ColliderNull = true;
         }
+    }
+    //вспомогательный метод для SearchingItemWhithBoxCollider2D() 
+    //метод определяющий объект
+    private GameObject AimObject(RaycastHit2D hit2, RaycastHit2D hit22, RaycastHit2D hit222)
+    {
+        if (hit2.collider != null) return hit2.collider.gameObject;
+        if (hit22.collider != null) return hit22.collider.gameObject;
+        if (hit222.collider != null) return hit222.collider.gameObject;
+        return null;//возвращаем null если нет объекта
     }
 
     private bool IsTouchingWall(float moveInput)
@@ -96,14 +140,6 @@ public class PlayerController : MonoBehaviour
             {
                 hitColliderNull = false;
                 //проверка на наличие боксколлайдера для одиночных объектов
-                /*                if (HasBoxCollider2D(hit.collider.gameObject))
-                                {
-                                    if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true)
-                                    { return false; } //если коллайдер является тригером - возвращаем false
-                                    else
-                                        return true;
-                                }
-                                else return true;//если коллайдер но не бокс - стена*/
                 return IsTriggerBoxCollider2D(hit.collider.gameObject);
             }
             else
@@ -115,9 +151,6 @@ public class PlayerController : MonoBehaviour
                 if (hit.collider != null) //значит стена есть
                 {
                     hitColliderNull = false;
-                    /* if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true) { return false; }
-                     else
-                         return true;*/
                     return IsTriggerBoxCollider2D(hit.collider.gameObject);
                 }
                 else
@@ -129,9 +162,6 @@ public class PlayerController : MonoBehaviour
                     if (hit.collider != null) //значит стена есть
                     {
                         hitColliderNull = false;
-                        /*                        if (hit.collider.gameObject.GetComponent<BoxCollider2D>().isTrigger == true) { return false; }
-                                                else
-                                                    return true;*/
                         return IsTriggerBoxCollider2D(hit.collider.gameObject);
                     }
                     else
@@ -156,10 +186,23 @@ public class PlayerController : MonoBehaviour
             if (gO.GetComponent<BoxCollider2D>().isTrigger == true)
             { return false; } //если коллайдер является тригером - возвращаем false (т.е. стены нет)
             else
+            {
+                SearchingItemWhithBoxCollider2D(gO);//определяем что за предмет
                 return true;
+            }
         }
         else return true;//если коллайдер но не бокс - стена 
     }
+    //получаем урон от врага, если это он
+    private void SearchingItemWhithBoxCollider2D(GameObject gO)
+    {
+        if (gO.CompareTag("Enemy"))
+        {
+            healthBar.GetComponent<HealthBar>().MinusHealth(gO.GetComponent<Enemy>().Damage());  //получить урон от врага
+            //сделаться неуязвимым временно
+        }
+    }
+
     //проверяет наличие BoxCollider2D на объекте
     bool HasBoxCollider2D(GameObject g)
     {

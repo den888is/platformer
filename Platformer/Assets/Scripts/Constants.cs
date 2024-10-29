@@ -9,4 +9,6 @@ public static class Constants
     public static float BEAM_LENGTH_VERTICAL = 0.375f;//длина луча
     public static float JUMP_FORCE = 20f;//сила прыжка
     public static float MOOVE_SPEED = 10f;//скорость бега
+
+    public static float IMMUNITY_TIME = 3f;
 }

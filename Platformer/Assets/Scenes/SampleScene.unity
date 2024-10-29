@@ -209,9 +209,10 @@ GameObject:
   - component: {fileID: 126919384}
   - component: {fileID: 126919383}
   - component: {fileID: 126919385}
+  - component: {fileID: 126919386}
   m_Layer: 0
   m_Name: Spike
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -328,6 +329,19 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.82042, y: 0.4532789}
   m_EdgeRadius: 0
+--- !u!114 &126919386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126919382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d8392bb97d29634d9ac99c544a29248, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damage: 0
 --- !u!1 &328655671
 GameObject:
   m_ObjectHideFlags: 0
@@ -1234,10 +1248,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1150631165}
+  - component: {fileID: 1150631169}
   - component: {fileID: 1150631164}
   - component: {fileID: 1150631166}
   - component: {fileID: 1150631167}
-  - component: {fileID: 1150631169}
   m_Layer: 0
   m_Name: Hero
   m_TagString: Hero
