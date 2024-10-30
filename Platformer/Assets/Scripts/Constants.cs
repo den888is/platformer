@@ -11,4 +11,6 @@ public static class Constants
     public static float MOOVE_SPEED = 10f;//скорость бега
 
     public static float IMMUNITY_TIME = 3f;
+
+    public static int MAX_SPEED_VECTOR_VELOCITY_NO_DAMAGE = -30;//максимальная скорость, с которой можно упасть без ущерба
 }

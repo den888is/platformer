@@ -10,6 +10,7 @@ TagManager:
   - Hero
   - Door
   - Enemy
+  - Kit
   layers:
   - Default
   - TransparentFX
