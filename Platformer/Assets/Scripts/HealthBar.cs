@@ -69,7 +69,7 @@ public class HealthBar : MonoBehaviour
         yield return null;
     }
     //принимает любые значения velocity.y
-    public bool FallDamage(int speed)//возвращает true если ударился сильно
+    public bool CheckFallDamage(int speed)//возвращает true если ударился сильно
     {
         Debug.Log("FallDamage");
         if (speed >= 0) { Debug.Log("Ничего не делаем на отскоке"); return false; }

@@ -51,7 +51,20 @@ public class PlayerController : MonoBehaviour
     {
         // Получаем ввод по горизонтали
         moveInput = Input.GetAxis("Horizontal");
+        //поворот
+        if (moveInput > 0)
+        {
+            Quaternion rot = transform.rotation;
+            rot.y = 0;
+            transform.rotation = rot;
+        }
 
+        if (moveInput < 0)
+        {
+            Quaternion rot = transform.rotation;
+            rot.y = 180;
+            transform.rotation = rot;
+        }
         // Проверка на столкновение с стенами
         if (!IsTouchingWall(moveInput))//нет присоединенной стены
         {
@@ -129,7 +142,7 @@ public class PlayerController : MonoBehaviour
                 }
                 isGrounded = true; //значит на твердой поверхности 
                 //если упал с высоты на Скорости - получи урон
-                wasDamage = healthBar.GetComponent<HealthBar>().FallDamage(Mathf.RoundToInt(maxVelY));//чтобы сохраненное значение обработать
+                wasDamage = healthBar.GetComponent<HealthBar>().CheckFallDamage(Mathf.RoundToInt(maxVelY));//чтобы сохраненное значение обработать
                 if (wasDamage)
                 {
                     maxVelY = 0; //Обнулили максимальный вектор
