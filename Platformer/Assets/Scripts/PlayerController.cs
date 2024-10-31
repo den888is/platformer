@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
     private float speedVelocityY;//переменна€ значени€ вектора по Y (во избежание переназначени€)
     private float maxVelY;//максимальное значение velocity.y до падени€
     private bool wasDamage;// получил ли урон от падени€
+    private Animator animator;
 
     public float jumpForce; // —ила прыжка
     public float moveSpeed; // —корость перемещени€
@@ -31,6 +32,7 @@ public class PlayerController : MonoBehaviour
         horizontalHitCollider = false;
         verticalDownHitCollider = false;
         healthBar = GameObject.Find("HealthBar");
+        animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -65,15 +67,25 @@ public class PlayerController : MonoBehaviour
             rot.y = 180;
             transform.rotation = rot;
         }
+        if (moveInput == 0)
+        {
+            animator.SetBool("goHorizontal", false);
+        }
         // ѕроверка на столкновение с стенами
         if (!IsTouchingWall(moveInput))//нет присоединенной стены
         {
             // ѕеремещение игрока
             rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
+            if (moveInput != 0)
+                animator.SetBool("goHorizontal", true);
+            // animator.SetBool("jump", false);
+
         }
-        else//иначе не двигаемс€ по горизонтали*
+        else//иначе не двигаемс€ по горизонтали* (есть помеха по горизонтали)
         {
             rb.velocity = new Vector2(0f, rb.velocity.y);
+            animator.SetBool("goHorizontal", false);
+            animator.SetBool("fall", true);
         }
     }
 
@@ -126,7 +138,7 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("maxVelY: " + maxVelY);
             }
             verticalDownHitCollider = true;//было столкновение с коллайдером
-            if (!IsTriggerBoxCollider2D(AimObject(hit2, hit22, hit222)))
+            if (!IsTriggerBoxCollider2D(AimObject(hit2, hit22, hit222)))//не тригер
             {
                 Debug.Log("коллайдер, но не триггер бокс коллайдер ");
                 // ≈сли упал на бокс коллайдер
@@ -147,12 +159,18 @@ public class PlayerController : MonoBehaviour
                 {
                     maxVelY = 0; //ќбнулили максимальный вектор
                 }
+                animator.SetBool("onGround", true);
+                animator.SetBool("jump", false);
+                animator.SetBool("fall", false);
             }
             else
             {
                 Debug.Log("тригер Ѕокс оллайдер");
                 isGrounded = false;
                 verticalDownHitCollider = false;
+                animator.SetBool("fall", true);
+                animator.SetBool("onGround", false);
+                animator.SetBool("jump", false);
             }
         }
         else
@@ -160,6 +178,15 @@ public class PlayerController : MonoBehaviour
             //свободный полет
             isGrounded = false;
             if (speedVelocityY < maxVelY) { maxVelY = speedVelocityY; }//запоминаем максимальную скорость
+            animator.SetBool("onGround", false);
+            if (speedVelocityY < 0)
+            {
+                animator.SetBool("fall", true);
+                animator.SetBool("jump", false);
+                animator.SetBool("onGround", false);
+            }
+            else { animator.SetBool("fall", false); animator.SetBool("jump", true); animator.SetBool("onGround", false); };
+            //if (speedVelocityY > 0) { animator.SetBool("fall", false); } else { animator.SetBool("fall", true); };
         }
     }
     //вспомогательный метод дл€ SearchingItemWhithBoxCollider2D() 
@@ -283,6 +310,9 @@ public class PlayerController : MonoBehaviour
     {
         // ѕримен€ем силу прыжка
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        animator.SetBool("onGround", false);
+        animator.SetBool("jump", true);
+        animator.SetBool("fall", false);
     }
     void OnTriggerEnter2D(Collider2D collision)
     {
